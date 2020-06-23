@@ -6,13 +6,21 @@ from datetime import datetime
 
 
 class Matcher():
-    def __init__(self, probe_path, gallery_path, dataset_name):
-        # lenght of ids to get from feature files
+    def __init__(self, probe_path, gallery_path, dataset_name, length):
+        # length of ids to get from feature files 
         self.id_length = -1
         self.dataset_name = dataset_name
 
         # load features, subject ids, feature labels from probe file
-        probe_file = np.sort(np.loadtxt(probe_path, dtype=np.str))
+        if length == 1:
+            tmp = []
+            with open(probe_path) as f:
+                for line in f:
+                    tmp.append(line.strip())
+            probe_file = np.sort(np.asarray(tmp, dtype=np.str))
+        else:
+            probe_file = np.sort(np.loadtxt(probe_path, dtype=np.str))
+
         self.probe, self.probe_ids, self.probe_labels = self.get_features(probe_file)
 
         if gallery_path is not None:
@@ -71,7 +79,7 @@ class Matcher():
         elif self.dataset_name == 'CHIYA_VAL':
             subject_id = feature_label[1:-4]
 
-        elif self.dataset_name == 'PUBLIC_IVS' or self.dataset_name == 'VGGFACE2':
+        elif self.dataset_name == 'PUBLIC_IVS' or self.dataset_name == 'VGGFACE2' or self.dataset_name == 'ASIAN_CELEB':
             subject_id = path.split(feature_label)[0]
 
         elif self.id_length > 0:
@@ -126,6 +134,7 @@ if __name__ == '__main__':
     parser.add_argument('-output', '-o', help='Output folder.')
     parser.add_argument('-dataset', '-d', help='Dataset name.')
     parser.add_argument('-group', '-gr', help='Group name, e.g. AA')
+    parser.add_argument('-length', '-l', type=int, default = 0, help='Various length or not (probe file)')
 
     args = parser.parse_args()
     time1 = datetime.now()
@@ -133,7 +142,7 @@ if __name__ == '__main__':
     if not path.exists(args.output):
         makedirs(args.output)
 
-    matcher = Matcher(args.probe, args.gallery, args.dataset.upper())
+    matcher = Matcher(args.probe, args.gallery, args.dataset.upper(), args.length)
     matcher.match_features()
     matcher.save_matches(args.output, args.group)
     time2 = datetime.now()
